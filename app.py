@@ -7,49 +7,49 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Logging Configuration
 logging.basicConfig(level=logging.INFO)
-app_logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
-# SQLAlchemy 2.x Base Class
 class Base(DeclarativeBase):
     pass
 
-# Database Setup
 db = SQLAlchemy(model_class=Base)
 
-# Flask Application
-app = Flask(__name__)
-app.secret_key = os.environ.get("SESSION_SECRET", "fallback-dev-key-123")
+def create_app():
+    app = Flask(__name__)
+    app.secret_key = os.environ.get("SESSION_SECRET", os.urandom(24).hex())
 
-# PostgreSQL URL Fix for Render
-database_url = os.environ.get("DATABASE_URL", "").replace("postgres://", "postgresql://")
-app.config["SQLALCHEMY_DATABASE_URI"] = database_url or "postgresql://localhost/telegram_bot"
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_recycle": 300,
-    "pool_pre_ping": True,
-    "connect_args": {"options": "-c timezone=utc"}
-}
+    # Database Configuration
+    database_url = os.environ.get("DATABASE_URL", "").replace("postgres://", "postgresql://")
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url or "postgresql://localhost/telegram_bot"
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_recycle": 300,
+        "pool_pre_ping": True,
+        "pool_size": 10,
+        "max_overflow": 20
+    }
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-# ProxyFix for Render
-app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+    # Initialize extensions
+    db.init_app(app)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
-# Initialize DB
-db.init_app(app)
+    # Register blueprints or routes
+    from routes import init_routes
+    init_routes(app)
 
-# Import Models and Create Tables
-with app.app_context():
-    try:
-        from models import *  # noqa: F401, F403
-        db.create_all()
-        app_logger.info("Database tables created successfully.")
-    except Exception as e:
-        app_logger.error(f"Failed to create database tables: {str(e)}")
-        raise
+    return app
 
-# Health Check Endpoint
-@app.route("/")
-def health_check():
-    return "Server is running", 200
+app = create_app()
 
-# Gunicorn Entry Point
+@app.before_first_request
+def initialize_database():
+    with app.app_context():
+        try:
+            from models import Base
+            Base.metadata.create_all(bind=db.engine)
+            logger.info("Database tables created successfully")
+        except Exception as e:
+            logger.error(f"Database initialization error: {e}")
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
