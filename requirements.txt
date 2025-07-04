@@ -1,7 +1,9 @@
-# SQLAlchemy 1.4 kullanacaksanız:
-sqlalchemy==1.4.46
-flask-sqlalchemy==2.5.1
-
-# Veya SQLAlchemy 2.0 kullanacaksanız:
-sqlalchemy==2.0.25
+flask==2.3.3
 flask-sqlalchemy==3.1.1
+sqlalchemy==2.0.25
+psycopg2-binary==2.9.9
+gunicorn==21.2.0
+gevent==23.9.1
+pyTelegramBotAPI==4.15.0
+requests==2.31.0
+python-dotenv==1.0.0
