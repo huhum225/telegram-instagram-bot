@@ -1,8 +1,8 @@
-flask==3.0.0
-flask-sqlalchemy==3.1.1
-gunicorn==23.0.0
-psycopg2-binary==2.9.9
+flask==2.3.3
+flask-sqlalchemy==2.5.1
+sqlalchemy==1.4.48  # Flask-SQLAlchemy 2.5.1 ile uyumlu
+gunicorn==21.2.0
+psycopg2==2.9.9  # Binary olmayan sürüm
 pyTelegramBotAPI==4.15.0
 requests==2.31.0
-sqlalchemy==2.0.25
-werkzeug==3.0.1
+werkzeug==2.3.7  # Flask 2.x ile uyumlu
